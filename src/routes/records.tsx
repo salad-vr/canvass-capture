@@ -2,9 +2,21 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Camera, FileText } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Download, Camera, FileText, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/records")({
   component: RecordsPage,
@@ -23,6 +35,7 @@ type Record = {
 };
 
 function RecordsPage() {
+  const qc = useQueryClient();
   const { data: records = [] } = useQuery({
     queryKey: ["all-records"],
     queryFn: async () => {
@@ -46,6 +59,42 @@ function RecordsPage() {
       return data as any[];
     },
   });
+
+  async function wipeAll() {
+    try {
+      // Delete all voter records first (child table)
+      const { error: recordsError } = await supabase
+        .from("voter_records")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+      if (recordsError) throw recordsError;
+
+      // Delete all walk sheets
+      const { error: sheetsError } = await supabase
+        .from("walk_sheets")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+      if (sheetsError) throw sheetsError;
+
+      // Clean up storage bucket
+      const { data: files } = await supabase.storage.from("walk-sheets").list();
+      if (files && files.length > 0) {
+        const filePaths = files.map((f) => f.name);
+        const { error: storageError } = await supabase.storage.from("walk-sheets").remove(filePaths);
+        if (storageError) console.error("Storage cleanup error:", storageError);
+      }
+
+      // Invalidate queries to refresh the UI
+      qc.invalidateQueries({ queryKey: ["all-records"] });
+      qc.invalidateQueries({ queryKey: ["all-sheets"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+
+      toast.success("All records wiped successfully.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to wipe records.");
+    }
+  }
 
   function exportCsv(approvedOnly: boolean) {
     const rows = approvedOnly ? records.filter((r) => r.approved) : records;
@@ -86,13 +135,36 @@ function RecordsPage() {
             <h1 className="mt-2 text-4xl font-extrabold">Canvass Records</h1>
             <p className="mt-2 text-white/80">{records.length} total · {approvedCount} approved</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => exportCsv(true)} size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 rounded-full font-bold">
               <Download className="mr-2 h-5 w-5" /> Export Approved CSV
             </Button>
             <Button onClick={() => exportCsv(false)} size="lg" variant="outline" className="rounded-full border-white/40 bg-white/10 font-semibold text-white hover:bg-white/20 hover:text-white">
               All
             </Button>
+            {records.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="lg" variant="outline" className="rounded-full border-red-400/50 bg-red-500/10 font-semibold text-red-200 hover:bg-red-500/20 hover:text-red-100">
+                    <Trash2 className="mr-2 h-5 w-5" /> Wipe All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Wipe all records?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all {records.length} voter records, {sheets.length} walk sheets, and all uploaded photos from storage. This action cannot be undone. Make sure you have exported any data you need.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={wipeAll} className="bg-red-600 hover:bg-red-700 text-white">
+                      Yes, wipe everything
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       </div>
