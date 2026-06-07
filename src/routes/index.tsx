@@ -48,7 +48,7 @@ function HomePage() {
             </h1>
             <p className="mt-6 max-w-xl text-lg text-white/85">
               Volunteers canvass with familiar paper walk sheets. At the end of the day, snap a
-              photo — we extract names, addresses, support levels, and sign requests automatically.
+              photo - we extract names, addresses, support levels, and sign requests automatically.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 rounded-full px-7 font-bold shadow-brand">
@@ -87,7 +87,7 @@ function HomePage() {
           <h2 className="mt-3 text-4xl font-extrabold tracking-tight">Four steps. Zero typing.</h2>
         </div>
         <div className="grid gap-6 md:grid-cols-4">
-          <Step n={1} icon={ClipboardList} title="Canvass" body="Volunteers use paper walk sheets — natural, friendly, no screens at the door." />
+          <Step n={1} icon={ClipboardList} title="Canvass" body="Volunteers use paper walk sheets - natural, friendly, no screens at the door." />
           <Step n={2} icon={Camera} title="Snap" body="Photograph completed sheets at end of day. Each sheet gets a volunteer + route tag." />
           <Step n={3} icon={CheckCircle2} title="Review" body="AI extracts every row. Confirm or fix any field in a clean side-by-side view." />
           <Step n={4} icon={Download} title="Export" body="One click pulls the master CSV ready for the campaign database." />

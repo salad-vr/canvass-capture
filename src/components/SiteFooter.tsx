@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-border bg-purple text-purple-foreground">
@@ -15,7 +17,12 @@ export function SiteFooter() {
         </div>
         <div className="text-sm text-white/80 md:text-right">
           <div className="font-semibold text-white">Canvass Capture · Internal Tool</div>
-          <div className="mt-1">From clipboard to database — no manual entry.</div>
+          <div className="mt-1">From clipboard to database - no manual entry.</div>
+          <div className="mt-2">
+            <Link to="/privacy" className="text-white/60 hover:text-white transition underline">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
